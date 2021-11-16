@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<!-- cse6242 -->
+
+<!-- run: http-server & -->
+
+<head>
+  <style>
+    
+    text,p { font: 12px arial; }
+
+  </style>
+
+
+
+</head>
+
+
+<title>Confirmed COVID-19 Cases in Irvine, CA</title>
+
+<body>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script>
+
+const div = d3.selectAll("div");
+
+</script>
+  <script>
+
+    var m = {t: 30, r: 20, b: 100, l: 100};
+    var w = 960 - m.l - m.r;
+    var h = 500 - m.t - m.b;
+    var bar_width = 10;
+    var parseDate = d3.timeParse("%m/%d/%Y");
+
+
+    //api: https://services2.arcgis.com/LORzk2hk9xzHouw9/arcgis/rest/services/Public_OC_COVID_Cases_by_City_by_Day/FeatureServer/0/query?where=1%3D1&outFields=Irvine,Total,DateSpecCollect&outSR=4326&f=json
+
+    //https://docs.google.com/spreadsheets/d/e/2PACX-1vRqv8dDOaSD7bHVDkTgbeiSJbJRPB0ZH3VHBWDVHvw2fg4t3m2JNM5FbKQ53gIhmmmTww2K9nv3m1pj/pub?gid=0&single=true&output=csv
+
+    const drawChart = async () => {
+      // Everything else will go here
+      const data = await d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqv8dDOaSD7bHVDkTgbeiSJbJRPB0ZH3VHBWDVHvw2fg4t3m2JNM5FbKQ53gIhmmmTww2K9nv3m1pj/pub?gid=0&single=true&output=csv",function(d){
+      //const data = await d3.csv("sample.csv",function(d){
+        return{
+          date: parseDate(d.date),
+          cum_cases: parseInt(d.cum_cases),
+          daily_cases: parseInt(d.daily_cases)
+        };
+      });
+      console.log(data);
+    
+
+
+    // create scales x & y for X and Y axis and set their ranges
+
+    var x_min = d3.min(data,function(d) {return d.date;});
+    var x_max = d3.max(data,function(d) {return d.date;});
+    var y_min = d3.min(data,function(d) {return d.cum_cases;});
+    var y_max = d3.max(data,function(d) {return d.cum_cases;});
+
+    var x = d3.scaleTime().range([0,w]).domain([x_min,x_max]);
+    var y = d3.scaleLinear().range([h,0]).domain([y_min-10,y_max]);
+
+    
+
+    // append svg element to the body of the page
+    // set dimensions and position of the svg element
+    var svg = d3.select("body")
+                .append("svg")
+                  .attr("width",w + m.l + m.r)
+                  .attr("height",h + m.t + m.b)
+                .append("g")
+                  .attr("transform","translate(" + m.l + "," + m.t + ")");
+
+
+      
+      
+      // Add bars to svg - create new elements based on your data
+      svg.selectAll("rect")
+            .data(data)
+          .enter().append("rect")
+            .attr("x",function(d,i) {
+              console.log("x scale: "+x(d.date));
+              return x(d.date);
+            })
+            .attr("y", function(d) {
+              return y(d.cum_cases);
+            })
+            .attr("width",bar_width)
+            .attr("height", function(d) {
+              return h - y(d.cum_cases);
+            })
+            .attr("fill","orange");
+
+
+      // Add the X Axis
+      var xAxis = d3.axisBottom()
+                          .scale(x)
+                          .ticks(d3.timeDay.every(1))
+                          .tickFormat(d3.timeFormat("%m/%d"));
+    
+      svg.append("g")
+            .attr("transform","translate(0," + h + ")")
+            .attr("id","x_axis")
+            .call(xAxis);
+
+      // Add the text label for X Axis
+      svg.append("text")
+            .attr("class","text")
+            .attr("id","x_axis_label")
+            .attr("x",w/2)
+            .attr("y",h+m.b/2)
+            .style("text-anchor","middle")
+            .text("Date")
+
+      // Add the Y Axis
+      var yAxis = d3.axisLeft()
+                          .scale(y)
+                          .ticks(10);                
+      svg.append("g")
+            .attr("id","y_axis")
+            .call(yAxis);
+
+      // Add the text label for Y axis
+      svg.append("text")
+            .attr("id","y_axis_label")
+            .attr("transform","rotate(-90)")
+            .attr("x",-h/2)
+            .attr("y",-m.l/1.5)
+            .style("text-anchor","middle")
+            .text("Running Total")
+
+      // Add chart title
+      svg.append("text")
+            .attr("id","title")
+            .attr("x",w/2)
+            .attr("y",m.t/2)
+            .style("text-anchor","middle")
+            .text("Running Total of Confirmed COVID-19 Cases in Irvine, CA")
+
+      // Add credit
+      svg.append("text")
+            .attr("id","credit")
+            .attr("x",w+m.r/2)
+            .attr("y",h+m.b/2)
+            .style("text-anchor","end")
+            .text("cku32")
+
+      d3.select("body")
+          .selectAll("p")
+            .data(data)
+          .enter().append("p")
+            .text(function(d){
+              return (d3.format("02")(d.date.getMonth()+1)+"/"+d3.format("02")(d.date.getDate())+" "+d3.format(",")(d.cum_cases)+" "+d3.format(",")(d.daily_cases));
+            })
+
+
+
+    };
+
+    drawChart();
+
+
+  </script>
+
+</body>
